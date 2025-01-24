@@ -39,7 +39,7 @@ fn process_voting(
         println!("{} voted white !", voter);
         voters.insert(voter, String::from("White"));
         scores.insert(
-            "Null".to_string(),
+            "White".to_string(),
             scores.get(&"White".to_string()).unwrap() + 1,
         );
     } else if !scores.contains_key(&candidate)
