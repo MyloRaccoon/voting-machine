@@ -1,0 +1,6 @@
+Usage: tred [-vr?] <files>
+  -o FILE - redirect output (default to stdout)
+  -v - verbose (to stderr)
+  -r - print removed edges to stderr
+  -? - print usage
+If no files are specified, stdin is used
