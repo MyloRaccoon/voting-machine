@@ -19,7 +19,7 @@ async fn main() -> Result<(), Error> {
     
     for candidate in args.candidates {
         if candidate == String::from("White") || candidate == String::from("Null") {
-            println!("/Warning\\ \"{candidate}\" is automatically added, it's not need in arguments.");
+            println!("/Warning\\ \"{candidate}\" is automatically added, it's not needed in arguments.");
         } else {
             conf.candidates.push(candidate);
         }
@@ -28,9 +28,6 @@ async fn main() -> Result<(), Error> {
     if conf.candidates.len() == 0 {
         println!("/Warning\\ You didn't input any candidates, this poll is useless.");
     }
-
-    conf.candidates.push(String::from("White"));
-    conf.candidates.push(String::from("Null"));
 
     run_app(conf).await?;
 

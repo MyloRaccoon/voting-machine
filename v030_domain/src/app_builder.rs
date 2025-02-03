@@ -1,6 +1,5 @@
-use std::collections::BTreeMap;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
-use crate::configuration::Configuration;
+use crate::{configuration::Configuration, domain::{BallotPaper, Candidate, VoteOutcome, Voter, VotingMachine}};
 
 fn print_commands() {
     println!("Commands :");
@@ -10,66 +9,67 @@ fn print_commands() {
     println!(" - q : quit");
 }
 
-fn print_voters(voters: &mut BTreeMap<String, String>) {
-    println!("Voters : ");
-    for (voter, candidate) in voters {
-        println!(" - {voter} voted for {candidate}");
-    }
-}
+// fn print_voters(voters: &mut BTreeMap<String, String>) {
+//     println!("Voters : ");
+//     for (voter, candidate) in voters {
+//         println!(" - {voter} voted for {candidate}");
+//     }
+// }
 
-fn print_scores(scores: &mut BTreeMap<String, u32>) {
-    println!("Candidates for best Game Engine :");
-    for (candidate, score) in scores {
-        println!(" - {candidate} : {score} votes");
-    }
-}
+// fn print_scores(scores: &mut BTreeMap<String, u32>) {
+//     println!("Candidates for best Game Engine :");
+//     for (candidate, score) in scores {
+//         println!(" - {candidate} : {score} votes");
+//     }
+// }
 
-fn process_voting(
-    voters: &mut BTreeMap<String, String>,
-    voter: String,
-    candidate: String,
-    scores: &mut BTreeMap<String, u32>,
-) {
-    if voters.contains_key(&voter) {
-        println!("Voter \"{}\" already voted !", voter);
-        return;
-    }
+// fn process_voting(
+//     voters: &mut BTreeMap<String, String>,
+//     voter: String,
+//     candidate: String,
+//     scores: &mut BTreeMap<String, u32>,
+// ) {
+//     if voters.contains_key(&voter) {
+//         println!("Voter \"{}\" already voted !", voter);
+//         return;
+//     }
 
-    if candidate == String::from("") {
-        println!("{} voted white !", voter);
-        voters.insert(voter, String::from("White"));
-        scores.insert(
-            "White".to_string(),
-            scores.get(&"White".to_string()).unwrap() + 1,
-        );
-    } else if !scores.contains_key(&candidate)
-        || candidate == String::from("Null")
-        || candidate == String::from("White")
-    {
-        println!(
-            "\"{}\" is not a candidate, {} voted null !",
-            candidate, voter
-        );
-        voters.insert(voter, String::from("Null"));
-        scores.insert(
-            "Null".to_string(),
-            scores.get(&"Null".to_string()).unwrap() + 1,
-        );
-    } else {
-        println!("{} vote for {} !", voter, candidate);
-        scores.insert(candidate.clone(), scores.get(&candidate).unwrap() + 1);
-        voters.insert(voter, candidate.clone());
-    }
-}
+//     if candidate == String::from("") {
+//         println!("{} voted white !", voter);
+//         voters.insert(voter, String::from("White"));
+//         scores.insert(
+//             "White".to_string(),
+//             scores.get(&"White".to_string()).unwrap() + 1,
+//         );
+//     } else if !scores.contains_key(&candidate)
+//         || candidate == String::from("Null")
+//         || candidate == String::from("White")
+//     {
+//         println!(
+//             "\"{}\" is not a candidate, {} voted null !",
+//             candidate, voter
+//         );
+//         voters.insert(voter, String::from("Null"));
+//         scores.insert(
+//             "Null".to_string(),
+//             scores.get(&"Null".to_string()).unwrap() + 1,
+//         );
+//     } else {
+//         println!("{} vote for {} !", voter, candidate);
+//         scores.insert(candidate.clone(), scores.get(&candidate).unwrap() + 1);
+//         voters.insert(voter, candidate.clone());
+//     }
+// }
 
 
 pub async fn run_app(conf: Configuration) -> anyhow::Result<()> {
-	let mut voters: BTreeMap<String, String> = BTreeMap::new();
-    let mut scores: BTreeMap<String, u32> = BTreeMap::new();
+	let mut candidates: Vec<Candidate> = Vec::new();
 
     for candidate in conf.candidates {
-        scores.insert(candidate.clone(), 0);
+        candidates.push(Candidate(candidate));
     }
+
+    let mut voting_machine: VotingMachine = VotingMachine::new(candidates);
 
     println!(" ~ Welcome ~");
     print_commands();
@@ -82,21 +82,29 @@ pub async fn run_app(conf: Configuration) -> anyhow::Result<()> {
             "vote" => {
                 let mut ite = input.split_whitespace();
                 ite.next();
-                let voter = ite.next().unwrap_or("");
-                if voter != "" {
-                    let candidate = ite.next().unwrap_or("");
-                    process_voting(
-                        &mut voters,
-                        voter.to_string(),
-                        candidate.to_string(),
-                        &mut scores,
-                    );
-                } else {
-                    println!("Command \"vote\" gets 2 args [voter] [candidate]");
+                match ite.next() {
+                    Some(voter_str) => {
+                        let voter = Voter(voter_str.to_string());
+                        let candidate = match ite.next() {
+                            Some(candidate_str) => Some(Candidate(candidate_str.to_string())),
+                            None => None,
+                        };
+                        let ballot_paper = BallotPaper{
+                            voter: voter,
+                            candidate: candidate,
+                        };
+                        match voting_machine.vote(ballot_paper) {
+                            VoteOutcome::AcceptedVote(voter, candidate) => println!("{} voted for {} !", voter.0, candidate.0),
+                            VoteOutcome::BlankVote(voter) => println!("{} voted blank !", voter.0),
+                            VoteOutcome::InvalidVote(voter) => println!("{} voted null !", voter.0),
+                            VoteOutcome::HasAlreadyVoted(voter) => println!("{} already voted !", voter.0),
+                        }
+                    },
+                    None => println!("Command \"vote\" gets 1 to 2 args <voter> [<candidate>]"),
                 }
             }
-            "voters" => print_voters(&mut voters),
-            "scores" => print_scores(&mut scores),
+            "voters" => println!("{}", voting_machine.voters.print()),
+            "scores" => println!("{}", voting_machine.scoreboard.print()),
             "q" => {
                 println!("Goodbye !");
                 break;
