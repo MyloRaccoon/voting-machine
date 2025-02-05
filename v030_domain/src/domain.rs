@@ -7,7 +7,7 @@ pub struct Voter(pub String);
 #[derive(Debug, Ord, PartialEq, Eq, PartialOrd, Clone)]
 pub struct Candidate(pub String);
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Score(pub usize);
 
 pub struct AttendenceSheet(pub Set<Voter>);
@@ -33,6 +33,7 @@ impl AttendenceSheet {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Scoreboard {
     pub scores: Map<Candidate, Score>,
     pub blank_score: Score,
@@ -62,11 +63,13 @@ impl Scoreboard {
     }
 }
 
+#[derive(Clone)]
 pub struct BallotPaper {
     pub voter: Voter,
     pub candidate: Option<Candidate>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum VoteOutcome {
     AcceptedVote(Voter, Candidate),
     BlankVote(Voter),
@@ -75,8 +78,8 @@ pub enum VoteOutcome {
 }
 
 pub struct VotingMachine {
-    pub voters: AttendenceSheet,
-    pub scoreboard: Scoreboard,
+    voters: AttendenceSheet,
+    scoreboard: Scoreboard,
 }
 
 impl VotingMachine {
@@ -112,5 +115,81 @@ impl VotingMachine {
                 return VoteOutcome::BlankVote(voter.clone());
             },
         }
+    }
+
+    pub fn get_scoreboard(&self) -> &Scoreboard {
+        &self.scoreboard
+    }
+
+    pub fn get_voters(&self) -> &AttendenceSheet {
+        &self.voters
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::{BallotPaper, Candidate, Voter, VotingMachine, VoteOutcome, Score};
+
+    #[test]
+    fn accepted_vote() {
+        let candidates = vec![Candidate("Godot".to_string()), Candidate("Unreal".to_string()), Candidate("Unity".to_string())];
+        let mut voting_machine = VotingMachine::new(candidates);
+        
+        let candidate = Candidate("Godot".to_string());
+        let voter = Voter("Jean".to_string());
+        
+        let ballot_paper = BallotPaper{
+            voter: voter.clone(),
+            candidate: Some(candidate.clone()),
+        };
+
+        assert_eq!(voting_machine.vote(ballot_paper), VoteOutcome::AcceptedVote(voter, candidate.clone()));
+        assert_eq!(*voting_machine.get_scoreboard().scores.get(&candidate).unwrap(), Score(1));
+    }
+
+    #[test]
+    fn has_already_voted() {
+        let candidates = vec![Candidate("Godot".to_string()), Candidate("Unreal".to_string()), Candidate("Unity".to_string())];
+        let mut voting_machine = VotingMachine::new(candidates);
+        let candidate = Candidate("Godot".to_string());
+        let voter = Voter("Jean".to_string());
+        let ballot_paper = BallotPaper{
+            voter: voter.clone(),
+            candidate: Some(candidate.clone()),
+        };
+        voting_machine.vote(ballot_paper.clone());
+        assert_eq!(voting_machine.vote(ballot_paper), VoteOutcome::HasAlreadyVoted(voter));
+        assert_eq!(*voting_machine.get_scoreboard().scores.get(&candidate).unwrap(), Score(1));
+    }
+
+    #[test]
+    fn blank_vote() {
+        let candidates = vec![Candidate("Godot".to_string()), Candidate("Unreal".to_string()), Candidate("Unity".to_string())];
+        let mut voting_machine = VotingMachine::new(candidates);
+
+        let voter = Voter("Jean".to_string());
+
+        let ballot_paper = BallotPaper{
+            voter: voter.clone(),
+            candidate: None,
+        };
+
+        assert_eq!(voting_machine.vote(ballot_paper), VoteOutcome::BlankVote(voter));
+        assert_eq!(voting_machine.get_scoreboard().blank_score, Score(1));
+    }
+
+    #[test]
+    fn invalid_vote() {
+        let candidates = vec![Candidate("Godot".to_string()), Candidate("Unreal".to_string()), Candidate("Unity".to_string())];
+        let mut voting_machine = VotingMachine::new(candidates);
+        let voter = Voter("Jean".to_string());
+        let ballot_paper = BallotPaper{
+            voter: voter.clone(),
+            candidate: Some(Candidate("NotInListCandidate".to_string())),
+        };
+
+        assert_eq!(voting_machine.vote(ballot_paper), VoteOutcome::InvalidVote(voter));
+        assert_eq!(voting_machine.get_scoreboard().invalid_score, Score(1));
     }
 }
