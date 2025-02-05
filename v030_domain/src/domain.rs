@@ -92,11 +92,11 @@ impl VotingMachine {
     pub fn vote(&mut self, ballot_paper: BallotPaper) -> VoteOutcome {
         let voter = ballot_paper.voter;
 
+        if self.voters.contains(&voter) {
+            return VoteOutcome::HasAlreadyVoted(voter);
+        }
         match ballot_paper.candidate {
             Some(candidate) => {
-                if self.voters.contains(&voter) {
-                    return VoteOutcome::HasAlreadyVoted(voter);
-                }
                 self.voters.0.insert(voter.clone());
                 match self.scoreboard.scores.get_mut(&candidate) {
                     Some(score) => {
