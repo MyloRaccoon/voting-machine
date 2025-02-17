@@ -4,12 +4,6 @@ use std::collections::BTreeMap;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 use clap::Parser;
 
-#[derive(Parser, Debug)]
-struct Args {
-    #[arg(short, long, value_delimiter = ' ', num_args = 1..)]
-    candidates: Vec<String>,
-}
-
 fn print_commands() {
     println!("Commands :");
     println!(" - vote : to vote");
@@ -43,7 +37,7 @@ fn process_voting(
         return;
     }
 
-    if candidate == String::from("") {
+    if candidate == *"" {
         println!("{} voted white !", voter);
         voters.insert(voter, String::from("White"));
         scores.insert(
@@ -51,8 +45,8 @@ fn process_voting(
             scores.get(&"White".to_string()).unwrap() + 1,
         );
     } else if !scores.contains_key(&candidate)
-        || candidate == String::from("Null")
-        || candidate == String::from("White")
+        || candidate == *"Null"
+        || candidate == *"White"
     {
         println!(
             "\"{}\" is not a candidate, {} voted null !",
@@ -72,20 +66,17 @@ fn process_voting(
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let args = Args::parse();
-    let mut conf = Configuration {
-        candidates : Vec::new()
-    };
+    let mut conf = Configuration::parse();
     
-    for candidate in args.candidates {
-        if candidate == String::from("White") || candidate == String::from("Null") {
+    for candidate in conf.candidates.clone().into_iter() {
+        if candidate == *"White" || candidate == *"Null" {
             println!("/Warning\\ \"{candidate}\" is automatically added, it's not need in arguments.");
         } else {
             conf.candidates.push(candidate);
         }
     }
 
-    if conf.candidates.len() == 0 {
+    if conf.candidates.is_empty() {
         println!("/Warning\\ You didn't input any candidates, this poll is useless.");
     }
 
@@ -112,7 +103,7 @@ async fn main() -> Result<(), Error> {
                 let mut ite = input.split_whitespace();
                 ite.next();
                 let voter = ite.next().unwrap_or("");
-                if voter != "" {
+                if !voter.is_empty() {
                     let candidate = ite.next().unwrap_or("");
                     process_voting(
                         &mut voters,

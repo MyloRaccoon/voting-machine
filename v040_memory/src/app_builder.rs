@@ -37,13 +37,10 @@ pub async fn run_app(conf: Configuration) -> anyhow::Result<()> {
                 match ite.next() {
                     Some(voter_str) => {
                         let voter = Voter(voter_str.to_string());
-                        let candidate = match ite.next() {
-                            Some(candidate_str) => Some(Candidate(candidate_str.to_string())),
-                            None => None,
-                        };
+                        let candidate = ite.next().map(|candidate_str| Candidate(candidate_str.to_string()));
                         let ballot_paper = BallotPaper{
-                            voter: voter,
-                            candidate: candidate,
+                            voter,
+                            candidate,
                         };
                         match voting_machine.vote(ballot_paper) {
                             VoteOutcome::AcceptedVote(voter, candidate) => println!("{} voted for {} !", voter.0, candidate.0),

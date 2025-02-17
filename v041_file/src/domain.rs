@@ -24,14 +24,7 @@ impl AttendenceSheet {
     }
 
     pub fn contains(&self, voter: &Voter) -> bool {
-        let mut res = false;
-        for c_voter in self.0.clone() {
-            if c_voter.0 == voter.0 {
-                res = true;
-                break;
-            }
-        }
-        res
+        self.0.contains(voter)
     }
 }
 
@@ -116,18 +109,18 @@ impl VotingMachine {
                 match self.scoreboard.scores.get_mut(&candidate) {
                     Some(score) => {
                         score.0 += 1;
-                        return VoteOutcome::AcceptedVote(voter, candidate);
+                        VoteOutcome::AcceptedVote(voter, candidate)
                     },
                     None => {
                         self.scoreboard.invalid_score.0 += 1;
-                        return VoteOutcome::InvalidVote(voter);
+                        VoteOutcome::InvalidVote(voter)
                     },
                 }
             },
             None => {
                 self.scoreboard.blank_score.0 += 1;
                 self.voters.0.insert(voter.clone());
-                return VoteOutcome::BlankVote(voter.clone());
+                VoteOutcome::BlankVote(voter.clone())
             },
         }
     }

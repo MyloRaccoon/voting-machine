@@ -35,7 +35,7 @@ fn process_voting(
         return;
     }
 
-    if candidate == String::from("") {
+    if candidate == *"" {
         println!("{} voted white !", voter);
         voters.insert(voter, String::from("White"));
         scores.insert(
@@ -43,8 +43,8 @@ fn process_voting(
             scores.get(&"White".to_string()).unwrap() + 1,
         );
     } else if !scores.contains_key(&candidate)
-        || candidate == String::from("Null")
-        || candidate == String::from("White")
+        || candidate == *"Null"
+        || candidate == *"White"
     {
         println!(
             "\"{}\" is not a candidate, {} voted null !",
@@ -83,7 +83,7 @@ pub async fn run_app(conf: Configuration) -> anyhow::Result<()> {
                 let mut ite = input.split_whitespace();
                 ite.next();
                 let voter = ite.next().unwrap_or("");
-                if voter != "" {
+                if !voter.is_empty() {
                     let candidate = ite.next().unwrap_or("");
                     process_voting(
                         &mut voters,
