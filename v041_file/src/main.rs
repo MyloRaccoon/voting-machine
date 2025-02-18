@@ -1,6 +1,8 @@
 use anyhow::{Error, Ok};
-use v041_file::configuration::Configuration;
-use v041_file::app_builder::run_app;
+use v041_file::configuration::{Configuration, StorageType};
+use v041_file::app_builder::handle_lines;
+use v041_file::storages::file::FileStore;
+use v041_file::storages::memory::MemoryStore;
 use clap::Parser;
 
 #[tokio::main]
@@ -22,7 +24,10 @@ async fn main() -> Result<(), Error> {
     conf.candidates.push(String::from("White"));
     conf.candidates.push(String::from("Null"));
 
-    run_app(conf).await?;
-
+    match conf.storage {
+        StorageType::File => handle_lines::<FileStore>(conf).await?,
+        StorageType::Memory => handle_lines::<MemoryStore>(conf).await?,
+    };
+    
     Ok(())
 }

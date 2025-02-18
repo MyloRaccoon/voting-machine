@@ -1,5 +1,5 @@
 use tokio::io::{self, AsyncBufReadExt, BufReader};
-use crate::{configuration::Configuration, domain::{BallotPaper, Candidate, VoteOutcome, Voter, VotingMachine}, storage::Storage, storages::memory::{MemoryStore}};
+use crate::{configuration::Configuration, domain::{BallotPaper, Candidate, VoteOutcome, Voter, VotingMachine}, storage::Storage};
 
 fn print_commands() {
     println!("Commands :");
@@ -19,8 +19,8 @@ fn create_voting_machine(conf: &Configuration) -> VotingMachine {
     VotingMachine::new(candidates)
 }
 
-pub async fn run_app(conf: Configuration) -> anyhow::Result<()> {
-    let mut memory = MemoryStore::new(create_voting_machine(&conf)).await?;
+pub async fn handle_lines<Store: Storage>(conf: Configuration) -> anyhow::Result<()> {
+    let mut memory = Store::new(create_voting_machine(&conf)).await?;
 
     println!(" ~ Welcome ~");
     print_commands();
