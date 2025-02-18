@@ -90,6 +90,7 @@ impl Storage for FileStore {
 		let machine_dao = VotingMachineDao::from(machine);
 		let data = serde_json::to_string(&machine_dao)?;
 		file.write_all(data.as_bytes()).await?;
+		file.flush().await?;
         Ok(())
     }
 }
