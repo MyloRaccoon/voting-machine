@@ -78,10 +78,10 @@ impl Storage for FileStore {
     }
 
     async fn get_voting_machine(&self) -> anyhow::Result<VotingMachine> {
-        let mut file = File::open(self.filepath.clone()).await.expect("A");
+        let mut file = File::open(self.filepath.clone()).await?;
 		let mut data_bytes = vec![];
-		file.read_to_end(&mut data_bytes).await.expect("B");
-		let machine_dao: VotingMachineDao = from_slice(&data_bytes).expect("C");
+		file.read_to_end(&mut data_bytes).await?;
+		let machine_dao: VotingMachineDao = from_slice(&data_bytes)?;
 		Ok(VotingMachine::from(machine_dao))
     }
 
